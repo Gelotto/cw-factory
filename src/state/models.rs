@@ -15,5 +15,6 @@ pub struct SubMsgContext {
     pub code_id: Uint64,
     pub contract_id: ContractId,
     pub created_by: Addr,
+    pub name: Option<String>,
     pub admin: Addr,
 }

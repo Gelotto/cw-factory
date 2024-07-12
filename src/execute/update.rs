@@ -1,9 +1,12 @@
 use crate::{
     error::ContractError,
-    msg::{IndexUpdate, UpdateMsg},
+    msg::{ContractSelector, IndexUpdate, UpdateMsg},
     state::{
         build_index_storage_key, build_reverse_mapping_storage_key,
-        storage::{ContractId, IndexMap, CONTRACT_ADDR_2_ID, ID_2_UPDATED_AT, IX_UPDATED_AT, MANAGED_BY},
+        storage::{
+            ContractId, IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_ID_2_ADDR, CONTRACT_NAME_2_ID, ID_2_UPDATED_AT,
+            IX_UPDATED_AT, MANAGED_BY,
+        },
     },
 };
 use cosmwasm_std::{attr, ensure_eq, Response};
@@ -17,14 +20,14 @@ pub fn exec_update(
 ) -> Result<Response, ContractError> {
     let Context { deps, env, info } = ctx;
     let UpdateMsg {
-        contract: maybe_contract_addr,
+        contract: maybe_contract_selector,
         indices: index_updates,
     } = msg;
 
-    // Get addr of contract applying updates. The sender must be either the
+    // Get ID of contract applying updates. Sender must be either the
     // contract itself, assuming it is managed by this factory, or the factory
-    // maanger. Not one else.
-    let contract_addr = if let Some(addr) = maybe_contract_addr {
+    // manager. No one else.
+    let contract_id = if let Some(selector) = maybe_contract_selector {
         let manager = MANAGED_BY.load(deps.storage)?;
         ensure_eq!(
             info.sender,
@@ -33,12 +36,23 @@ pub fn exec_update(
                 reason: "only manager or a contract itself can apply updates".to_owned()
             }
         );
-        deps.api.addr_validate(addr.as_str())?
+        match selector {
+            ContractSelector::Address(addr) => {
+                CONTRACT_ADDR_2_ID.load(deps.storage, &deps.api.addr_validate(addr.as_str())?)?
+            },
+            ContractSelector::Id(id) => {
+                if !CONTRACT_ID_2_ADDR.has(deps.storage, id) {
+                    return Err(ContractError::NotAuthorized {
+                        reason: format!("contract ID not found: {}", id),
+                    });
+                }
+                id
+            },
+            ContractSelector::Name(name) => CONTRACT_NAME_2_ID.load(deps.storage, &name)?,
+        }
     } else {
-        info.sender.to_owned()
+        CONTRACT_ADDR_2_ID.load(deps.storage, &info.sender)?
     };
-
-    let contract_id = CONTRACT_ADDR_2_ID.load(deps.storage, &deps.api.addr_validate(contract_addr.as_str())?)?;
 
     // Update the contract's entry in the updated_at index
     {
@@ -53,7 +67,7 @@ pub fn exec_update(
         ID_2_UPDATED_AT.save(deps.storage, contract_id, &t.to_vec())?;
     }
 
-    // Apply each index updated received
+    // Apply each index update
     for IndexUpdate { name, value } in index_updates.unwrap_or_default().iter() {
         // Normalized received index value to u8 slice
         let bytes = value.to_bytes();

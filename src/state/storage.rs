@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Timestamp, Uint64};
 use cw_storage_plus::{Item, Map};
 
-use super::models::{Config, SubMsgContext};
+use super::models::SubMsgContext;
 
 pub type ContractId = u32;
 pub type IndexMap<'a> = Map<'a, (&'a [u8], ContractId), u8>;
@@ -15,13 +15,15 @@ pub const CONFIG_DEFAULT_CODE_ID: Item<Uint64> = Item::new("default_code_id");
 pub const CONFIG_ALLOWED_CODE_IDS: Map<u64, u8> = Map::new("allowed_code_ids");
 
 pub const REPLY_ID_COUNTER: Item<Uint64> = Item::new("reply_id_counter");
-pub const CONTRACT_ID_COUNTER: Item<u32> = Item::new("contract_id_counter");
+pub const CONTRACT_ID_COUNTER: Item<ContractId> = Item::new("contract_id_counter");
 
 pub const SUBMSG_CONTEXTS: Map<u64, SubMsgContext> = Map::new("submsg_contexts");
 
-pub const CONTRACT_ID_2_ADDR: Map<ContractId, Addr> = Map::new("contract_id_2_addr");
-pub const CONTRACT_ADDR_2_ID: Map<&Addr, u32> = Map::new("contract_addr_2_id");
 pub const CONTRACT_COUNTER: Item<u32> = Item::new("contract_counter");
+pub const CONTRACT_ID_2_ADDR: Map<ContractId, Addr> = Map::new("contract_id_2_addr");
+pub const CONTRACT_ID_2_NAME: Map<ContractId, String> = Map::new("contract_id_2_name");
+pub const CONTRACT_ADDR_2_ID: Map<&Addr, ContractId> = Map::new("contract_addr_2_id");
+pub const CONTRACT_NAME_2_ID: Map<&String, ContractId> = Map::new("contract_name_2_id");
 
 pub const IX_CODE_ID: Map<(&[u8], ContractId), u8> = Map::new("ix_code_id");
 pub const IX_CREATED_AT: Map<(&[u8], ContractId), u8> = Map::new("ix_created_at");

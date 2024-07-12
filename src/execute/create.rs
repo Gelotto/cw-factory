@@ -6,12 +6,12 @@ use crate::{
         models::SubMsgContext,
         storage::{
             CONFIG_ALLOWED_CODE_IDS, CONFIG_DEFAULT_CODE_ID, CONTRACT_ADDR_2_ID, CONTRACT_COUNTER, CONTRACT_ID_2_ADDR,
-            CONTRACT_ID_COUNTER, IX_ADMIN, IX_CODE_ID, IX_CREATED_AT, IX_CREATED_BY, IX_UPDATED_AT, REPLY_ID_COUNTER,
-            SUBMSG_CONTEXTS,
+            CONTRACT_ID_2_NAME, CONTRACT_ID_COUNTER, CONTRACT_NAME_2_ID, IX_ADMIN, IX_CODE_ID, IX_CREATED_AT,
+            IX_CREATED_BY, IX_UPDATED_AT, REPLY_ID_COUNTER, SUBMSG_CONTEXTS,
         },
     },
 };
-use cosmwasm_std::{attr, Addr, DepsMut, Env, Reply, Response, StdError, SubMsg, WasmMsg};
+use cosmwasm_std::{attr, Addr, DepsMut, Env, Event, Reply, Response, StdError, SubMsg, WasmMsg};
 use cw_utils::{parse_reply_instantiate_data, MsgInstantiateContractResponse};
 
 use super::Context;
@@ -66,17 +66,13 @@ pub fn exec_create(
             code_id: code_id.into(),
             created_by: info.sender.to_owned(),
             admin: admin.to_owned(),
+            name: msg.name,
             contract_id,
         },
     )?;
 
     Ok(Response::new()
-        .add_attributes(vec![
-            attr("action", "create"),
-            attr("code_id", code_id.to_string()),
-            attr("label", msg.label.to_owned()),
-            attr("admin", admin.to_owned()),
-        ])
+        .add_attributes(vec![attr("action", "create")])
         .add_submessage(SubMsg::reply_on_success(
             WasmMsg::Instantiate {
                 msg: msg.instantiate_msg,
@@ -117,16 +113,30 @@ pub fn exec_create_reply_handler(
         code_id,
         created_by,
         admin,
+        name,
     } = SUBMSG_CONTEXTS.load(deps.storage, reply.id)?;
 
+    SUBMSG_CONTEXTS.remove(deps.storage, reply.id);
+
     CONTRACT_COUNTER.update(deps.storage, |n| -> Result<_, ContractError> { add_u32(n, 1) })?;
+
     CONTRACT_ADDR_2_ID.save(deps.storage, &contract_address, &contract_id)?;
     CONTRACT_ID_2_ADDR.save(deps.storage, contract_id, &contract_address)?;
+
+    if let Some(contract_name) = &name {
+        CONTRACT_NAME_2_ID.save(deps.storage, contract_name, &contract_id)?;
+        CONTRACT_ID_2_NAME.save(deps.storage, contract_id, contract_name)?;
+    }
+
     IX_CODE_ID.save(deps.storage, (&code_id.to_le_bytes(), contract_id), &0)?;
     IX_CREATED_AT.save(deps.storage, (&t.to_le_bytes(), contract_id), &0)?;
     IX_CREATED_BY.save(deps.storage, (created_by.as_bytes(), contract_id), &0)?;
     IX_UPDATED_AT.save(deps.storage, (created_by.as_bytes(), contract_id), &0)?;
     IX_ADMIN.save(deps.storage, (admin.as_bytes(), contract_id), &0)?;
 
-    Ok(resp)
+    Ok(resp.add_event(Event::new("factory-create").add_attributes(vec![
+        attr("contract_address", contract_address.to_string()),
+        attr("code_id", code_id.to_string()),
+        attr("admin", admin.to_owned()),
+    ])))
 }
