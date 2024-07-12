@@ -25,6 +25,8 @@ pub const CONTRACT_ID_2_NAME: Map<ContractId, String> = Map::new("contract_id_2_
 pub const CONTRACT_ADDR_2_ID: Map<&Addr, ContractId> = Map::new("contract_addr_2_id");
 pub const CONTRACT_NAME_2_ID: Map<&String, ContractId> = Map::new("contract_name_2_id");
 
+pub const CUSTOM_INDEX_NAMES: Map<(ContractId, &String), u8> = Map::new("custom_index_names");
+
 pub const IX_CODE_ID: Map<(&[u8], ContractId), u8> = Map::new("ix_code_id");
 pub const IX_CREATED_AT: Map<(&[u8], ContractId), u8> = Map::new("ix_created_at");
 pub const IX_UPDATED_AT: Map<(&[u8], ContractId), u8> = Map::new("ix_updated_at");
@@ -36,3 +38,7 @@ pub const ID_2_CREATED_AT: Map<ContractId, Vec<u8>> = Map::new("id_2_created_at"
 pub const ID_2_UPDATED_AT: Map<ContractId, Vec<u8>> = Map::new("id_2_updated_at");
 pub const ID_2_CREATED_BY: Map<ContractId, Vec<u8>> = Map::new("id_2_created_by");
 pub const ID_2_ADMIN: Map<ContractId, Vec<u8>> = Map::new("id_2_admin");
+
+pub const IX_TAG: Map<(&[u8], ContractId), u8> = Map::new("ix_tag");
+pub const IX_WEIGHTED_TAG: Map<(&[u8], u16, ContractId), u8> = Map::new("ix_weighted_tag");
+pub const CONTRACT_TAG_WEIGHTS: Map<(ContractId, &[u8]), u16> = Map::new("contract_tag_weights");

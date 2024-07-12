@@ -1,15 +1,15 @@
 use crate::{
     error::ContractError,
-    msg::{ContractSelector, IndexUpdate, UpdateMsg},
+    msg::{ContractSelector, IndexUpdate, IndexValue, TagUpdate, UpdateMsg, UpdateOperation},
     state::{
         build_index_storage_key, build_reverse_mapping_storage_key,
         storage::{
-            ContractId, IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_ID_2_ADDR, CONTRACT_NAME_2_ID, ID_2_UPDATED_AT,
-            IX_UPDATED_AT, MANAGED_BY,
+            ContractId, IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_ID_2_ADDR, CONTRACT_NAME_2_ID, CONTRACT_TAG_WEIGHTS,
+            CUSTOM_INDEX_NAMES, ID_2_UPDATED_AT, IX_TAG, IX_UPDATED_AT, IX_WEIGHTED_TAG, MANAGED_BY,
         },
     },
 };
-use cosmwasm_std::{attr, ensure_eq, Response};
+use cosmwasm_std::{attr, ensure_eq, Response, Storage};
 use cw_storage_plus::Map;
 
 use super::Context;
@@ -22,6 +22,7 @@ pub fn exec_update(
     let UpdateMsg {
         contract: maybe_contract_selector,
         indices: index_updates,
+        tags: tag_updates,
     } = msg;
 
     // Get ID of contract applying updates. Sender must be either the
@@ -72,6 +73,12 @@ pub fn exec_update(
         // Normalized received index value to u8 slice
         let bytes = value.to_bytes();
 
+        // Track the fact that this index contains an entry for this contract so
+        // we can do things like
+        if !CUSTOM_INDEX_NAMES.has(deps.storage, (contract_id, name)) {
+            CUSTOM_INDEX_NAMES.save(deps.storage, (contract_id, name), &0)?;
+        }
+
         // Get index map
         let storage_key = build_index_storage_key(name);
         let map: IndexMap = Map::new(&storage_key);
@@ -90,5 +97,46 @@ pub fn exec_update(
         reverse_map.save(deps.storage, contract_id, &bytes)?;
     }
 
+    // Apply tag updates
+    for TagUpdate { op, tag, weight } in tag_updates.unwrap_or_default().iter() {
+        match op {
+            UpdateOperation::Set => {
+                set_tag(deps.storage, contract_id, tag.to_owned(), weight.to_owned())?;
+            },
+            UpdateOperation::Remove => {
+                let tag_bytes = IndexValue::String(tag.to_owned()).to_bytes();
+                remove_tag(deps.storage, contract_id, &tag_bytes)?;
+            },
+        }
+    }
+
     Ok(Response::new().add_attributes(vec![attr("action", "update")]))
+}
+
+fn set_tag(
+    store: &mut dyn Storage,
+    contract_id: ContractId,
+    tag: String,
+    weight: Option<u16>,
+) -> Result<(), ContractError> {
+    let tag_bytes = &IndexValue::String(tag).to_bytes();
+    let weight = weight.unwrap_or_default();
+    remove_tag(store, contract_id, tag_bytes)?;
+    CONTRACT_TAG_WEIGHTS.save(store, (contract_id, tag_bytes), &0)?;
+    IX_WEIGHTED_TAG.save(store, (tag_bytes, weight, contract_id), &0)?;
+    IX_TAG.save(store, (tag_bytes, contract_id), &0)?;
+    Ok(())
+}
+
+fn remove_tag(
+    store: &mut dyn Storage,
+    contract_id: ContractId,
+    tag_bytes: &[u8],
+) -> Result<(), ContractError> {
+    if let Some(weight) = CONTRACT_TAG_WEIGHTS.may_load(store, (contract_id, tag_bytes))? {
+        CONTRACT_TAG_WEIGHTS.remove(store, (contract_id, tag_bytes));
+        IX_WEIGHTED_TAG.remove(store, (tag_bytes, weight, contract_id));
+        IX_TAG.remove(store, (tag_bytes, contract_id));
+    }
+    Ok(())
 }

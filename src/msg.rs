@@ -18,6 +18,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum ContractsQueryMsg {
     ByIndex(ContractsByIndexParams),
+    ByTag(ContractsByTagParams),
 }
 
 #[cw_serde]
@@ -36,6 +37,12 @@ pub struct ConfigResponse(pub Config);
 pub struct ContractsByIndexResponse {
     pub addresses: Vec<Addr>,
     pub cursor: Option<(Vec<u8>, ContractId)>,
+}
+
+#[cw_serde]
+pub struct ContractsByTagResponse {
+    pub addresses: Vec<Addr>,
+    pub cursor: Option<(Vec<u8>, u16, ContractId)>,
 }
 
 #[cw_serde]
@@ -99,6 +106,19 @@ impl IndexValue {
 }
 
 #[cw_serde]
+pub enum UpdateOperation {
+    Remove,
+    Set,
+}
+
+#[cw_serde]
+pub struct TagUpdate {
+    pub op: UpdateOperation,
+    pub tag: String,
+    pub weight: Option<u16>,
+}
+
+#[cw_serde]
 pub enum ContractSelector {
     Address(Addr),
     Id(ContractId),
@@ -109,6 +129,7 @@ pub enum ContractSelector {
 pub struct UpdateMsg {
     pub contract: Option<ContractSelector>,
     pub indices: Option<Vec<IndexUpdate>>,
+    pub tags: Option<Vec<TagUpdate>>,
 }
 
 #[cw_serde]
@@ -119,6 +140,7 @@ pub enum IndexSelector {
     UpdatedAt,
     CodeId,
     Admin,
+    Tag,
 }
 
 #[cw_serde]
@@ -142,17 +164,33 @@ pub enum ContractPaginationSelector {
 }
 
 #[cw_serde]
-pub enum PaginationRangeBound {
-    Exclusive(Vec<u8>),
-    Inclusive(Vec<u8>),
+pub enum IndexRangeBound {
+    Exclusive(IndexValue),
+    Inclusive(IndexValue),
+}
+
+#[cw_serde]
+pub enum TagWeightRangeBound {
+    Exclusive(u16),
+    Inclusive(u16),
 }
 
 #[cw_serde]
 pub struct ContractsByIndexParams {
     pub index: IndexSelector,
-    pub start: Option<PaginationRangeBound>,
-    pub stop: Option<PaginationRangeBound>,
+    pub start: Option<IndexRangeBound>,
+    pub stop: Option<IndexRangeBound>,
     pub cursor: Option<(Vec<u8>, ContractId)>,
+    pub limit: Option<u16>,
+    pub desc: Option<bool>,
+}
+
+#[cw_serde]
+pub struct ContractsByTagParams {
+    pub tag: String,
+    pub min_weight: Option<TagWeightRangeBound>,
+    pub max_weight: Option<TagWeightRangeBound>,
+    pub cursor: Option<(Vec<u8>, u16, ContractId)>,
     pub limit: Option<u16>,
     pub desc: Option<bool>,
 }

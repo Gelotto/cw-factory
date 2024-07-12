@@ -3,7 +3,8 @@ use crate::execute::create::{exec_create, exec_create_reply_handler};
 use crate::execute::update::exec_update;
 use crate::execute::{set_config::exec_set_config, Context};
 use crate::msg::{ContractsQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::contracts::query_contracts_by_index;
+use crate::query::contracts::by_index::query_contracts_by_index;
+use crate::query::contracts::by_tag::query_contracts_by_tag;
 use crate::query::{config::query_config, ReadonlyContext};
 use crate::state;
 use cosmwasm_std::{entry_point, to_json_binary, Reply};
@@ -60,6 +61,7 @@ pub fn query(
         QueryMsg::Config {} => to_json_binary(&query_config(ctx)?),
         QueryMsg::Contracts(msg) => match msg {
             ContractsQueryMsg::ByIndex(params) => to_json_binary(&query_contracts_by_index(ctx, params)?),
+            ContractsQueryMsg::ByTag(params) => to_json_binary(&query_contracts_by_tag(ctx, params)?),
         },
     }?;
     Ok(result)
