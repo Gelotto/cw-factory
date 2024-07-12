@@ -42,6 +42,7 @@ pub struct ContractsByIndexResponse {
 #[cw_serde]
 pub struct ContractsByTagResponse {
     pub addresses: Vec<Addr>,
+    pub weights: Vec<u16>,
     pub cursor: Option<(Vec<u8>, u16, ContractId)>,
 }
 
