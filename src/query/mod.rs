@@ -1,4 +1,5 @@
 pub mod config;
+pub mod contracts;
 
 use cosmwasm_std::{Deps, Env};
 

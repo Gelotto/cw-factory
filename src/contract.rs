@@ -1,13 +1,14 @@
 use crate::error::ContractError;
+use crate::execute::create::{exec_create, exec_create_reply_handler};
 use crate::execute::{set_config::exec_set_config, Context};
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{config::query_config, ReadonlyContext};
 use crate::state;
-use cosmwasm_std::{entry_point, to_json_binary};
+use cosmwasm_std::{entry_point, to_json_binary, Reply};
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
-const CONTRACT_NAME: &str = "crates.io:cw-contract";
+const CONTRACT_NAME: &str = "crates.io:cw-factory";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[entry_point]
@@ -18,7 +19,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(state::init(Context { deps, env, info }, &msg)?)
+    Ok(state::init(Context { deps, env, info }, msg)?)
 }
 
 #[entry_point]
@@ -31,7 +32,18 @@ pub fn execute(
     let ctx = Context { deps, env, info };
     match msg {
         ExecuteMsg::SetConfig(config) => exec_set_config(ctx, config),
+        ExecuteMsg::Create(msg) => exec_create(ctx, msg),
     }
+}
+
+#[entry_point]
+pub fn reply(
+    deps: DepsMut,
+    env: Env,
+    reply: Reply,
+) -> Result<Response, ContractError> {
+    let resp = exec_create_reply_handler(deps, env, reply)?;
+    Ok(resp)
 }
 
 #[entry_point]
