@@ -8,8 +8,7 @@ pub fn mul_u256<A: Into<Uint256>, B: Into<Uint256>>(
 ) -> Result<Uint256, ContractError> {
     let a: Uint256 = a.into();
     let b: Uint256 = b.into();
-    a.checked_mul(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_mul(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn sub_i256<A: Into<Int256>, B: Into<Int256>>(
@@ -18,8 +17,7 @@ pub fn sub_i256<A: Into<Int256>, B: Into<Int256>>(
 ) -> Result<Int256, ContractError> {
     let a: Int256 = a.into();
     let b: Int256 = b.into();
-    a.checked_sub(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_sub(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn add_i256<A: Into<Int256>, B: Into<Int256>>(
@@ -28,8 +26,7 @@ pub fn add_i256<A: Into<Int256>, B: Into<Int256>>(
 ) -> Result<Int256, ContractError> {
     let a: Int256 = a.into();
     let b: Int256 = b.into();
-    a.checked_add(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_add(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn add_u256<A: Into<Uint256>, B: Into<Uint256>>(
@@ -38,8 +35,7 @@ pub fn add_u256<A: Into<Uint256>, B: Into<Uint256>>(
 ) -> Result<Uint256, ContractError> {
     let a: Uint256 = a.into();
     let b: Uint256 = b.into();
-    a.checked_add(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_add(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn sub_u256<A: Into<Uint256>, B: Into<Uint256>>(
@@ -48,8 +44,7 @@ pub fn sub_u256<A: Into<Uint256>, B: Into<Uint256>>(
 ) -> Result<Uint256, ContractError> {
     let a: Uint256 = a.into();
     let b: Uint256 = b.into();
-    a.checked_sub(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_sub(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn div_u256<A: Into<Uint256>, B: Into<Uint256>>(
@@ -68,8 +63,7 @@ pub fn add_u128<A: Into<Uint128>, B: Into<Uint128>>(
 ) -> Result<Uint128, ContractError> {
     let a: Uint128 = a.into();
     let b: Uint128 = b.into();
-    a.checked_add(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_add(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn sub_u128<A: Into<Uint128>, B: Into<Uint128>>(
@@ -78,8 +72,7 @@ pub fn sub_u128<A: Into<Uint128>, B: Into<Uint128>>(
 ) -> Result<Uint128, ContractError> {
     let a: Uint128 = a.into();
     let b: Uint128 = b.into();
-    a.checked_sub(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_sub(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn mul_u128<A: Into<Uint128>, B: Into<Uint128>>(
@@ -88,8 +81,7 @@ pub fn mul_u128<A: Into<Uint128>, B: Into<Uint128>>(
 ) -> Result<Uint128, ContractError> {
     let a: Uint128 = a.into();
     let b: Uint128 = b.into();
-    a.checked_mul(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_mul(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn div_u128<A: Into<Uint128>, B: Into<Uint128>>(
@@ -140,8 +132,7 @@ pub fn sub_u64<A: Into<Uint64>, B: Into<Uint64>>(
 ) -> Result<Uint64, ContractError> {
     let a: Uint64 = a.into();
     let b: Uint64 = b.into();
-    a.checked_sub(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_sub(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn add_u64<A: Into<Uint64>, B: Into<Uint64>>(
@@ -150,15 +141,14 @@ pub fn add_u64<A: Into<Uint64>, B: Into<Uint64>>(
 ) -> Result<Uint64, ContractError> {
     let a: Uint64 = a.into();
     let b: Uint64 = b.into();
-    a.checked_add(b)
-        .map_err(|e| ContractError::Std(StdError::overflow(e)))
+    a.checked_add(b).map_err(|e| ContractError::Std(StdError::overflow(e)))
 }
 
 pub fn sub_u32(
     a: u32,
     b: u32,
 ) -> Result<u32, ContractError> {
-    a.checked_sub(1).ok_or_else(|| {
+    a.checked_sub(b).ok_or_else(|| {
         ContractError::Std(StdError::Overflow {
             source: OverflowError::new(OverflowOperation::Sub, a, b),
         })
@@ -169,7 +159,7 @@ pub fn add_u32(
     a: u32,
     b: u32,
 ) -> Result<u32, ContractError> {
-    a.checked_add(1).ok_or_else(|| {
+    a.checked_add(b).ok_or_else(|| {
         ContractError::Std(StdError::Overflow {
             source: OverflowError::new(OverflowOperation::Add, a, b),
         })
