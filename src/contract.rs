@@ -2,12 +2,17 @@ use crate::error::ContractError;
 use crate::execute::create::{exec_create, exec_create_reply_handler};
 use crate::execute::update::exec_update;
 use crate::execute::{set_config::exec_set_config, Context};
-use crate::msg::{ContractsQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::query::contracts::by_index::query_contracts_by_index;
-use crate::query::contracts::by_tag::query_contracts_by_tag;
+use crate::msg::{ContractQueryMsg, ContractSetQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::query::contract::has_relations::query_contract_has_relations;
+use crate::query::contract::has_tags::query_contract_has_tags;
+use crate::query::contract::relations::query_contract_relations;
+use crate::query::contract::tags::query_contract_tags;
+use crate::query::contracts::in_range::query_contracts_in_range;
+use crate::query::contracts::related_to::query_contracts_related_to;
+use crate::query::contracts::with_tag::query_contracts_with_tag;
 use crate::query::{config::query_config, ReadonlyContext};
 use crate::state;
-use cosmwasm_std::{entry_point, to_json_binary, Reply};
+use cosmwasm_std::{entry_point, to_json_binary as to_binary, Reply};
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
@@ -58,10 +63,17 @@ pub fn query(
 ) -> Result<Binary, ContractError> {
     let ctx = ReadonlyContext { deps, env };
     let result = match msg {
-        QueryMsg::Config {} => to_json_binary(&query_config(ctx)?),
+        QueryMsg::Config {} => to_binary(&query_config(ctx)?),
+        QueryMsg::Contract(msg) => match msg {
+            ContractQueryMsg::Tags(params) => to_binary(&query_contract_tags(ctx, params)?),
+            ContractQueryMsg::HasTags(params) => to_binary(&query_contract_has_tags(ctx, params)?),
+            ContractQueryMsg::Relations(params) => to_binary(&query_contract_relations(ctx, params)?),
+            ContractQueryMsg::HasRelations(params) => to_binary(&query_contract_has_relations(ctx, params)?),
+        },
         QueryMsg::Contracts(msg) => match msg {
-            ContractsQueryMsg::ByIndex(params) => to_json_binary(&query_contracts_by_index(ctx, params)?),
-            ContractsQueryMsg::ByTag(params) => to_json_binary(&query_contracts_by_tag(ctx, params)?),
+            ContractSetQueryMsg::InRange(params) => to_binary(&query_contracts_in_range(ctx, params)?),
+            ContractSetQueryMsg::WithTag(params) => to_binary(&query_contracts_with_tag(ctx, params)?),
+            ContractSetQueryMsg::RelatedTo(params) => to_binary(&query_contracts_related_to(ctx, params)?),
         },
     }?;
     Ok(result)

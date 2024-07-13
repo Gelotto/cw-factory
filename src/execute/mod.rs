@@ -1,4 +1,5 @@
 pub mod create;
+pub mod hide;
 pub mod set_config;
 pub mod update;
 

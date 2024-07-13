@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, Int128, Int64, Uint128, Uint64};
+use cosmwasm_std::{Addr, Binary, Int128, Int64, Timestamp, Uint128, Uint64};
 
 use crate::state::{models::Config, storage::ContractId};
 
@@ -16,19 +16,112 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
-pub enum ContractsQueryMsg {
-    ByIndex(ContractsByIndexParams),
-    ByTag(ContractsByTagParams),
+pub enum ContractSetQueryMsg {
+    InRange(ContractsInRangeQueryParams),
+    WithTag(ContractsByTagQueryParams),
+    RelatedTo(ContractsRelatedToParams),
+}
+
+#[cw_serde]
+pub enum ContractQueryMsg {
+    HasRelations(ContractHasRelationsQueryParams),
+    Relations(ContractRelationsQueryParams),
+    HasTags(ContractHasTagsQueryParams),
+    Tags(ContractTagsQueryParams),
 }
 
 #[cw_serde]
 pub enum QueryMsg {
     Config {},
-    Contracts(ContractsQueryMsg),
+    Contracts(ContractSetQueryMsg),
+    Contract(ContractQueryMsg),
 }
 
 #[cw_serde]
 pub struct MigrateMsg {}
+
+#[cw_serde]
+pub enum BooleanTest {
+    And,
+    Or,
+    Xor,
+}
+
+#[cw_serde]
+pub struct ContractHasTagsQueryParams {
+    pub contract: Addr,
+    pub test: BooleanTest,
+    pub tags: Vec<TagSelector>,
+}
+
+#[cw_serde]
+pub struct ContractHasRelationsQueryParams {
+    pub test: BooleanTest,
+    pub relations: Vec<NameValue>,
+    pub contract: Addr,
+    pub address: Addr,
+}
+
+#[cw_serde]
+pub struct ContractIsRelatedToResponse {
+    pub is_related: bool,
+    pub values: Vec<NameValue>,
+}
+
+#[cw_serde]
+pub struct ContractRelationsQueryParams {
+    pub contract: Addr,
+    pub cursor: Option<(String, Addr)>,
+    pub start: Option<RangeQueryBound<String>>,
+    pub stop: Option<RangeQueryBound<String>>,
+    pub limit: Option<u16>,
+    pub desc: Option<bool>,
+}
+
+#[cw_serde]
+pub struct NameValue {
+    pub name: String,
+    pub value: Option<String>,
+}
+
+#[cw_serde]
+pub struct RelatedAddress {
+    pub address: Addr,
+    pub name: String,
+    pub value: Option<String>,
+}
+
+#[cw_serde]
+pub struct ContractRelationsResponse {
+    pub cursor: Option<(String, Addr)>,
+    pub relations: Vec<RelatedAddress>,
+}
+
+#[cw_serde]
+pub struct ContractTagsQueryParams {
+    pub contract: Addr,
+    pub cursor: Option<String>,
+    pub start: Option<RangeQueryBound<String>>,
+    pub stop: Option<RangeQueryBound<String>>,
+    pub limit: Option<u16>,
+    pub desc: Option<bool>,
+}
+
+#[cw_serde]
+pub struct ContractTagsResponse {
+    pub cursor: Option<String>,
+    pub tags: Vec<WeightedTag>,
+}
+
+#[cw_serde]
+pub struct ContractMetadataResponse {
+    pub created_at: Timestamp,
+    pub created_by: Addr,
+    pub updated_at: Timestamp,
+    pub name: Option<String>,
+    pub code_id: Uint64,
+    pub admin: Addr,
+}
 
 #[cw_serde]
 pub struct ConfigResponse(pub Config);
@@ -44,6 +137,13 @@ pub struct ContractsByTagResponse {
     pub addresses: Vec<Addr>,
     pub weights: Vec<u16>,
     pub cursor: Option<(Vec<u8>, u16, ContractId)>,
+}
+
+#[cw_serde]
+pub struct ContractsRelatedToResponse {
+    pub addresses: Vec<Addr>,
+    pub values: Vec<Option<String>>,
+    pub cursor: Option<ContractId>,
 }
 
 #[cw_serde]
@@ -113,10 +213,24 @@ pub enum UpdateOperation {
 }
 
 #[cw_serde]
+pub struct WeightedTag {
+    pub tag: String,
+    pub weight: u16,
+}
+
+#[cw_serde]
 pub struct TagUpdate {
     pub op: UpdateOperation,
     pub tag: String,
     pub weight: Option<u16>,
+}
+
+#[cw_serde]
+pub struct RelationUpdate {
+    pub op: UpdateOperation,
+    pub name: String,
+    pub value: Option<String>,
+    pub address: Addr,
 }
 
 #[cw_serde]
@@ -130,6 +244,7 @@ pub enum ContractSelector {
 pub struct UpdateMsg {
     pub contract: Option<ContractSelector>,
     pub indices: Option<Vec<IndexUpdate>>,
+    pub relations: Option<Vec<RelationUpdate>>,
     pub tags: Option<Vec<TagUpdate>>,
 }
 
@@ -146,7 +261,7 @@ pub enum IndexSelector {
 
 #[cw_serde]
 pub struct TagSelector {
-    pub text: String,
+    pub tag: String,
     pub min_weight: Option<u16>,
     pub max_weight: Option<u16>,
 }
@@ -165,6 +280,12 @@ pub enum ContractPaginationSelector {
 }
 
 #[cw_serde]
+pub enum RangeQueryBound<T> {
+    Exclusive(T),
+    Inclusive(T),
+}
+
+#[cw_serde]
 pub enum IndexRangeBound {
     Exclusive(IndexValue),
     Inclusive(IndexValue),
@@ -177,21 +298,30 @@ pub enum TagWeightRangeBound {
 }
 
 #[cw_serde]
-pub struct ContractsByIndexParams {
+pub struct ContractsInRangeQueryParams {
+    pub cursor: Option<(Vec<u8>, ContractId)>,
     pub index: IndexSelector,
     pub start: Option<IndexRangeBound>,
     pub stop: Option<IndexRangeBound>,
-    pub cursor: Option<(Vec<u8>, ContractId)>,
     pub limit: Option<u16>,
     pub desc: Option<bool>,
 }
 
 #[cw_serde]
-pub struct ContractsByTagParams {
+pub struct ContractsByTagQueryParams {
+    pub cursor: Option<(Vec<u8>, u16, ContractId)>,
     pub tag: String,
     pub min_weight: Option<TagWeightRangeBound>,
     pub max_weight: Option<TagWeightRangeBound>,
-    pub cursor: Option<(Vec<u8>, u16, ContractId)>,
     pub limit: Option<u16>,
     pub desc: Option<bool>,
+}
+
+#[cw_serde]
+pub struct ContractsRelatedToParams {
+    pub cursor: Option<ContractId>,
+    pub limit: Option<u16>,
+    pub desc: Option<bool>,
+    pub name: String,
+    pub address: Addr,
 }

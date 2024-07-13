@@ -5,7 +5,7 @@ use cw_storage_plus::Bound;
 
 use crate::{
     error::ContractError,
-    msg::{ContractsByTagParams, ContractsByTagResponse, IndexValue, TagWeightRangeBound},
+    msg::{ContractsByTagQueryParams, ContractsByTagResponse, IndexValue, TagWeightRangeBound},
     query::ReadonlyContext,
     state::storage::{ContractId, CONTRACT_ID_2_ADDR, IX_WEIGHTED_TAG},
 };
@@ -13,9 +13,9 @@ use crate::{
 const DEFAULT_LIMIT: usize = 100;
 const MAX_LIMIT: usize = 500;
 
-pub fn query_contracts_by_tag(
+pub fn query_contracts_with_tag(
     ctx: ReadonlyContext,
-    params: ContractsByTagParams,
+    params: ContractsByTagQueryParams,
 ) -> Result<ContractsByTagResponse, ContractError> {
     let ReadonlyContext { deps, .. } = ctx;
 
@@ -45,17 +45,16 @@ pub fn query_contracts_by_tag(
 
 fn scan_tag(
     store: &dyn Storage,
-    params: &ContractsByTagParams,
+    params: &ContractsByTagQueryParams,
     limit: usize,
 ) -> Result<(Vec<(ContractId, u16)>, Option<(Vec<u8>, u16, ContractId)>), ContractError> {
-    let map = IX_WEIGHTED_TAG;
-
     // Convert tag to u8 slice
     let bytes_vec = IndexValue::String(params.tag.clone()).to_bytes();
     let bytes = bytes_vec.as_slice();
 
     let desc = params.desc.unwrap_or_default();
 
+    // Build the bound from which we're resuming iteration
     let from_bound = match &params.cursor {
         Some((cursor_bytes, w, id)) => Some(Bound::Exclusive(((cursor_bytes.as_slice(), *w, *id), PhantomData))),
         None => {
@@ -74,6 +73,7 @@ fn scan_tag(
         },
     };
 
+    // Build the terminal bound
     let to_bound = match &params.max_weight {
         Some(bound) => {
             let id = if desc { ContractId::MIN } else { ContractId::MAX };
@@ -85,13 +85,15 @@ fn scan_tag(
         None => None,
     };
 
+    // Prepare arguments for Map::keys
     let (min_bound, max_bound, order) = if desc {
         (to_bound, from_bound, Order::Descending)
     } else {
         (from_bound, to_bound, Order::Ascending)
     };
 
-    let keys: Vec<_> = map
+    // Load contract IDs and weights, ordered by weight
+    let keys: Vec<_> = IX_WEIGHTED_TAG
         .keys(store, min_bound, max_bound, order)
         .take(limit)
         .map(|r| r.unwrap())

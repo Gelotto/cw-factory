@@ -5,7 +5,7 @@ use cw_storage_plus::{Bound, Map};
 
 use crate::{
     error::ContractError,
-    msg::{ContractsByIndexParams, ContractsByIndexResponse, IndexRangeBound, IndexSelector},
+    msg::{ContractsByIndexResponse, ContractsInRangeQueryParams, IndexRangeBound, IndexSelector},
     query::ReadonlyContext,
     state::{
         build_index_storage_key,
@@ -19,9 +19,9 @@ use crate::{
 const DEFAULT_LIMIT: usize = 100;
 const MAX_LIMIT: usize = 500;
 
-pub fn query_contracts_by_index(
+pub fn query_contracts_in_range(
     ctx: ReadonlyContext,
-    params: ContractsByIndexParams,
+    params: ContractsInRangeQueryParams,
 ) -> Result<ContractsByIndexResponse, ContractError> {
     let ReadonlyContext { deps, .. } = ctx;
 
@@ -48,7 +48,7 @@ pub fn query_contracts_by_index(
 
 fn scan_index(
     store: &dyn Storage,
-    params: &ContractsByIndexParams,
+    params: &ContractsInRangeQueryParams,
     limit: usize,
 ) -> Result<(Vec<ContractId>, Option<(Vec<u8>, ContractId)>), ContractError> {
     let desc = params.desc.unwrap_or_default();

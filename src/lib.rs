@@ -8,3 +8,4 @@ pub mod msg;
 #[cfg(not(feature = "library"))]
 pub mod query;
 pub mod state;
+pub mod util;

@@ -1,15 +1,16 @@
 use crate::{
     error::ContractError,
-    msg::{ContractSelector, IndexUpdate, IndexValue, TagUpdate, UpdateMsg, UpdateOperation},
+    msg::{ContractSelector, IndexUpdate, IndexValue, RelationUpdate, TagUpdate, UpdateMsg, UpdateOperation},
     state::{
         build_index_storage_key, build_reverse_mapping_storage_key,
         storage::{
-            ContractId, IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_ID_2_ADDR, CONTRACT_NAME_2_ID, CONTRACT_TAG_WEIGHTS,
-            CUSTOM_INDEX_NAMES, ID_2_UPDATED_AT, IX_TAG, IX_UPDATED_AT, IX_WEIGHTED_TAG, MANAGED_BY,
+            ContractId, IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_CUSTOM_IX_VALUES, CONTRACT_ID_2_ADDR,
+            CONTRACT_NAME_2_ID, CONTRACT_TAG_WEIGHTS, ID_2_UPDATED_AT, IX_REL_ADDR, IX_REL_CONTRACT_ADDR, IX_TAG,
+            IX_UPDATED_AT, IX_WEIGHTED_TAG, MANAGED_BY,
         },
     },
 };
-use cosmwasm_std::{attr, ensure_eq, Response, Storage};
+use cosmwasm_std::{attr, ensure_eq, Addr, Response, Storage};
 use cw_storage_plus::Map;
 
 use super::Context;
@@ -23,6 +24,7 @@ pub fn exec_update(
         contract: maybe_contract_selector,
         indices: index_updates,
         tags: tag_updates,
+        relations: relation_updates,
     } = msg;
 
     // Get ID of contract applying updates. Sender must be either the
@@ -75,8 +77,8 @@ pub fn exec_update(
 
         // Track the fact that this index contains an entry for this contract so
         // we can do things like
-        if !CUSTOM_INDEX_NAMES.has(deps.storage, (contract_id, name)) {
-            CUSTOM_INDEX_NAMES.save(deps.storage, (contract_id, name), &0)?;
+        if !CONTRACT_CUSTOM_IX_VALUES.has(deps.storage, (contract_id, name)) {
+            CONTRACT_CUSTOM_IX_VALUES.save(deps.storage, (contract_id, name), &bytes)?;
         }
 
         // Get index map
@@ -97,7 +99,7 @@ pub fn exec_update(
         reverse_map.save(deps.storage, contract_id, &bytes)?;
     }
 
-    // Apply tag updates
+    // Update tags
     for TagUpdate { op, tag, weight } in tag_updates.unwrap_or_default().iter() {
         match op {
             UpdateOperation::Set => {
@@ -110,7 +112,52 @@ pub fn exec_update(
         }
     }
 
+    // Update relations
+    for RelationUpdate {
+        op,
+        name,
+        value,
+        address,
+    } in relation_updates.unwrap_or_default().iter()
+    {
+        match op {
+            UpdateOperation::Set => {
+                set_relation(deps.storage, contract_id, name, address, value.to_owned())?;
+            },
+            UpdateOperation::Remove => {
+                let name_bytes = IndexValue::String(name.to_owned()).to_bytes();
+                remove_relation(deps.storage, contract_id, &name_bytes, address.as_bytes())?;
+            },
+        }
+    }
+
     Ok(Response::new().add_attributes(vec![attr("action", "update")]))
+}
+
+fn remove_relation(
+    store: &mut dyn Storage,
+    contract_id: ContractId,
+    rel_name_bytes: &[u8],
+    rel_addr: &[u8],
+) -> Result<(), ContractError> {
+    IX_REL_ADDR.remove(store, (rel_addr, rel_name_bytes, contract_id));
+    IX_REL_CONTRACT_ADDR.remove(store, (contract_id, rel_name_bytes, rel_addr));
+    Ok(())
+}
+
+fn set_relation(
+    store: &mut dyn Storage,
+    contract_id: ContractId,
+    rel_name: &String,
+    rel_addr: &Addr,
+    value: Option<String>,
+) -> Result<(), ContractError> {
+    let rel_addr = rel_addr.as_bytes();
+    let rel_name_bytes = &IndexValue::String(rel_name.to_owned()).to_bytes();
+    remove_relation(store, contract_id, &rel_name_bytes, rel_addr)?;
+    IX_REL_ADDR.save(store, (rel_addr, rel_name_bytes, contract_id), &0)?;
+    IX_REL_CONTRACT_ADDR.save(store, (contract_id, rel_name_bytes, rel_addr), &value)?;
+    Ok(())
 }
 
 fn set_tag(
