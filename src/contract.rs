@@ -5,6 +5,7 @@ use crate::execute::{set_config::exec_set_config, Context};
 use crate::msg::{ContractQueryMsg, ContractSetQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::contract::has_relations::query_contract_has_relations;
 use crate::query::contract::has_tags::query_contract_has_tags;
+use crate::query::contract::metadata::query_contract_metadata;
 use crate::query::contract::relations::query_contract_relations;
 use crate::query::contract::tags::query_contract_tags;
 use crate::query::contracts::in_range::query_contracts_in_range;
@@ -69,6 +70,7 @@ pub fn query(
             ContractQueryMsg::HasTags(params) => to_binary(&query_contract_has_tags(ctx, params)?),
             ContractQueryMsg::Relations(params) => to_binary(&query_contract_relations(ctx, params)?),
             ContractQueryMsg::HasRelations(params) => to_binary(&query_contract_has_relations(ctx, params)?),
+            ContractQueryMsg::Metadata { address } => to_binary(&query_contract_metadata(ctx, address)?),
         },
         QueryMsg::Contracts(msg) => match msg {
             ContractSetQueryMsg::InRange(params) => to_binary(&query_contracts_in_range(ctx, params)?),

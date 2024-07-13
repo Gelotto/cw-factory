@@ -12,7 +12,7 @@ pub fn query_contract_has_tags(
     msg: ContractHasTagsQueryParams,
 ) -> Result<bool, ContractError> {
     let ReadonlyContext { deps, .. } = ctx;
-    let contract_id = CONTRACT_ADDR_2_ID.load(deps.storage, &deps.api.addr_validate(msg.contract.as_str())?)?;
+    let contract_id = CONTRACT_ADDR_2_ID.load(deps.storage, &deps.api.addr_validate(msg.address.as_str())?)?;
     match msg.test {
         BooleanTest::And => {
             for selector in msg.tags.iter() {

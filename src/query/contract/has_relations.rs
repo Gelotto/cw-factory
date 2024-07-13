@@ -12,7 +12,7 @@ pub fn query_contract_has_relations(
     msg: ContractHasRelationsQueryParams,
 ) -> Result<bool, ContractError> {
     let ReadonlyContext { deps, .. } = ctx;
-    let contract_id = CONTRACT_ADDR_2_ID.load(deps.storage, &deps.api.addr_validate(msg.contract.as_str())?)?;
+    let contract_id = CONTRACT_ADDR_2_ID.load(deps.storage, &deps.api.addr_validate(msg.contract_address.as_str())?)?;
     let address = deps.api.addr_validate(msg.address.as_str())?;
     match msg.test {
         BooleanTest::And => {

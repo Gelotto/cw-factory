@@ -28,6 +28,7 @@ pub enum ContractQueryMsg {
     Relations(ContractRelationsQueryParams),
     HasTags(ContractHasTagsQueryParams),
     Tags(ContractTagsQueryParams),
+    Metadata { address: Addr },
 }
 
 #[cw_serde]
@@ -49,7 +50,7 @@ pub enum BooleanTest {
 
 #[cw_serde]
 pub struct ContractHasTagsQueryParams {
-    pub contract: Addr,
+    pub address: Addr,
     pub test: BooleanTest,
     pub tags: Vec<TagSelector>,
 }
@@ -58,7 +59,7 @@ pub struct ContractHasTagsQueryParams {
 pub struct ContractHasRelationsQueryParams {
     pub test: BooleanTest,
     pub relations: Vec<NameValue>,
-    pub contract: Addr,
+    pub contract_address: Addr,
     pub address: Addr,
 }
 
@@ -70,7 +71,7 @@ pub struct ContractIsRelatedToResponse {
 
 #[cw_serde]
 pub struct ContractRelationsQueryParams {
-    pub contract: Addr,
+    pub address: Addr,
     pub cursor: Option<(String, Addr)>,
     pub start: Option<RangeQueryBound<String>>,
     pub stop: Option<RangeQueryBound<String>>,

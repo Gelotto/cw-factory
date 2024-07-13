@@ -17,7 +17,7 @@ pub fn query_contract_relations(
 ) -> Result<ContractRelationsResponse, ContractError> {
     let ReadonlyContext { deps, .. } = ctx;
     let ContractRelationsQueryParams {
-        contract,
+        address: contract,
         cursor,
         start,
         stop,
