@@ -6,11 +6,12 @@ use crate::{
         storage::{
             ContractId, IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_CUSTOM_IX_VALUES, CONTRACT_ID_2_ADDR,
             CONTRACT_NAME_2_ID, CONTRACT_TAG_WEIGHTS, ID_2_UPDATED_AT, IX_REL_ADDR, IX_REL_CONTRACT_ADDR, IX_TAG,
-            IX_UPDATED_AT, IX_WEIGHTED_TAG, MANAGED_BY,
+            IX_UPDATED_AT, IX_WEIGHTED_TAG,
         },
     },
+    util::ensure_is_manager,
 };
-use cosmwasm_std::{attr, ensure_eq, Addr, Response, Storage};
+use cosmwasm_std::{attr, Addr, Response, Storage};
 use cw_storage_plus::Map;
 
 use super::Context;
@@ -31,14 +32,7 @@ pub fn exec_update(
     // contract itself, assuming it is managed by this factory, or the factory
     // manager. No one else.
     let contract_id = if let Some(selector) = maybe_contract_selector {
-        let manager = MANAGED_BY.load(deps.storage)?;
-        ensure_eq!(
-            info.sender,
-            manager,
-            ContractError::NotAuthorized {
-                reason: "only manager or a contract itself can apply updates".to_owned()
-            }
-        );
+        ensure_is_manager(deps.storage, &info.sender)?;
         match selector {
             ContractSelector::Address(addr) => {
                 CONTRACT_ADDR_2_ID.load(deps.storage, &deps.api.addr_validate(addr.as_str())?)?
@@ -54,6 +48,7 @@ pub fn exec_update(
             ContractSelector::Name(name) => CONTRACT_NAME_2_ID.load(deps.storage, &name)?,
         }
     } else {
+        // sender is assumed to be the factory-managed contract itself
         CONTRACT_ADDR_2_ID.load(deps.storage, &info.sender)?
     };
 

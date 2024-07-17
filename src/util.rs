@@ -1,8 +1,11 @@
 use base64::{engine::general_purpose::URL_SAFE as BASE64, Engine as _};
-use cosmwasm_std::{Binary, StdError, StdResult, Storage};
+use cosmwasm_std::{ensure_eq, Addr, Binary, StdError, StdResult, Storage};
 use serde_json::{self, Map, Value};
 
-use crate::{error::ContractError, state::storage::PRESETS};
+use crate::{
+    error::ContractError,
+    state::storage::{MANAGED_BY, PRESETS},
+};
 
 const DEFAULT_LIMIT: usize = 100;
 const MAX_LIMIT: usize = 500;
@@ -45,4 +48,18 @@ pub fn apply_preset(
     let b64_encoded = BASE64.encode(json_str);
 
     Binary::from_base64(&b64_encoded)
+}
+
+pub fn ensure_is_manager(
+    store: &dyn Storage,
+    addr: &Addr,
+) -> Result<(), ContractError> {
+    ensure_eq!(
+        addr,
+        MANAGED_BY.load(store)?,
+        ContractError::NotAuthorized {
+            reason: "only manager can set presets".to_owned()
+        }
+    );
+    Ok(())
 }

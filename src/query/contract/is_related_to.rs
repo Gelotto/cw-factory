@@ -7,7 +7,7 @@ use crate::{
     state::storage::{ContractId, CONTRACT_ADDR_2_ID, IX_REL_CONTRACT_ADDR},
 };
 
-pub fn query_contract_has_relations(
+pub fn query_contract_is_related_to(
     ctx: ReadonlyContext,
     msg: ContractHasRelationsQueryParams,
 ) -> Result<bool, ContractError> {

@@ -2,10 +2,11 @@ use crate::{
     error::ContractError,
     state::{
         build_index_storage_key,
-        storage::{IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_CUSTOM_IX_VALUES, CONTRACT_ID_2_IS_HIDDEN, MANAGED_BY},
+        storage::{IndexMap, CONTRACT_ADDR_2_ID, CONTRACT_CUSTOM_IX_VALUES, CONTRACT_ID_2_IS_HIDDEN},
     },
+    util::ensure_is_manager,
 };
-use cosmwasm_std::{attr, ensure_eq, Addr, Order, Response};
+use cosmwasm_std::{attr, Addr, Order, Response};
 use cw_storage_plus::Map;
 
 use super::Context;
@@ -19,15 +20,7 @@ pub fn exec_toggle_hide(
     let Context { deps, info, .. } = ctx;
 
     let contract_addr = if let Some(contract_addr) = contract {
-        if contract_addr != info.sender {
-            ensure_eq!(
-                info.sender,
-                MANAGED_BY.load(deps.storage)?,
-                ContractError::NotAuthorized {
-                    reason: "only manager can hide and unhide a contract".to_owned()
-                }
-            );
-        }
+        ensure_is_manager(deps.storage, &info.sender)?;
         contract_addr
     } else {
         info.sender.to_owned()

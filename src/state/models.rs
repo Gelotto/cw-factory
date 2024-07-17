@@ -26,3 +26,27 @@ pub struct Preset {
     pub overridable: bool,
     pub n_uses: u32,
 }
+
+#[cw_serde]
+pub enum MigrationStatus {
+    Running,
+    Completed,
+    CompletedWithErrors,
+    Aborted,
+}
+
+#[cw_serde]
+pub struct Migration {
+    pub name: String,
+    pub status: MigrationStatus,
+    pub cursor: Option<ContractId>,
+    pub abort_on_error: bool,
+    pub n_success: u32,
+    pub n_error: u32,
+}
+
+#[cw_serde]
+pub struct MigrationError {
+    pub contract: Addr,
+    pub error: String,
+}

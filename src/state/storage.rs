@@ -1,7 +1,9 @@
 use cosmwasm_std::{Addr, Timestamp, Uint64};
 use cw_storage_plus::{Item, Map};
 
-use super::models::{Preset, SubMsgContext};
+use crate::msg::MigrationParams;
+
+use super::models::{Migration, MigrationError, MigrationStatus, Preset, SubMsgContext};
 
 pub type ContractId = u32;
 pub type IndexMap<'a> = Map<'a, (&'a [u8], ContractId), u8>;
@@ -59,3 +61,8 @@ pub const IX_REL_CONTRACT_ADDR: Map<(ContractId, &[u8], &[u8]), Option<String>> 
 pub const IX_REL_ADDR: Map<(&[u8], &[u8], ContractId), u8> = Map::new("ix_rel_addr");
 
 pub const PRESETS: Map<&String, Preset> = Map::new("presets");
+
+pub const MIGRATIONS: Map<&String, Migration> = Map::new("migrations");
+pub const MIGRATION_PARAMS: Map<&String, MigrationParams> = Map::new("migration_params");
+pub const MIGRATION_REPLY_ID_2_STATE: Map<u64, (String, ContractId)> = Map::new("migration_reply_id_2_name");
+pub const MIGRATION_ERRORS: Map<(&String, ContractId), MigrationError> = Map::new("migration_errors");

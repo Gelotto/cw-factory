@@ -5,6 +5,7 @@ use crate::{
         models::Preset,
         storage::{MANAGED_BY, PRESETS},
     },
+    util::ensure_is_manager,
 };
 use cosmwasm_std::{attr, ensure_eq, Response};
 
@@ -21,13 +22,7 @@ pub fn exec_set_preset(
         overridable,
     } = msg;
 
-    ensure_eq!(
-        info.sender,
-        MANAGED_BY.load(deps.storage)?,
-        ContractError::NotAuthorized {
-            reason: "only manager can set presets".to_owned()
-        }
-    );
+    ensure_is_manager(deps.storage, &info.sender)?;
 
     PRESETS.save(
         deps.storage,
@@ -48,13 +43,7 @@ pub fn exec_remove_preset(
 ) -> Result<Response, ContractError> {
     let Context { deps, info, .. } = ctx;
 
-    ensure_eq!(
-        info.sender,
-        MANAGED_BY.load(deps.storage)?,
-        ContractError::NotAuthorized {
-            reason: "only manager can set presets".to_owned()
-        }
-    );
+    ensure_is_manager(deps.storage, &info.sender)?;
 
     PRESETS.remove(deps.storage, &name);
 

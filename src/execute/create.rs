@@ -88,7 +88,7 @@ pub fn exec_create(
 
 /// Extract and save created contract address and initialize indexes and other
 /// contract-related state data structures.
-pub fn exec_create_reply_handler(
+pub fn handle_creation_reply(
     deps: DepsMut,
     env: Env,
     reply: Reply,

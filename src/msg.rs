@@ -32,7 +32,7 @@ pub enum ContractSetQueryMsg {
 
 #[cw_serde]
 pub enum ContractQueryMsg {
-    HasRelations(ContractHasRelationsQueryParams),
+    IsRelatedTo(ContractHasRelationsQueryParams),
     Relations(ContractRelationsQueryParams),
     HasTags(ContractHasTagsQueryParams),
     Tags(ContractTagsQueryParams),
@@ -362,4 +362,15 @@ pub struct ContractsRelatedToParams {
     pub desc: Option<bool>,
     pub name: String,
     pub address: Addr,
+}
+
+#[cw_serde]
+pub struct MigrationParams {
+    pub name: String,
+    pub limit: Option<u16>,
+    pub retry: Option<bool>,
+    pub abort_on_error: bool,
+    pub from_code_id: Option<Uint64>,
+    pub to_code_id: Uint64,
+    pub msg: Binary,
 }

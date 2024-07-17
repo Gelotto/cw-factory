@@ -1,5 +1,6 @@
 pub mod create;
 pub mod hide;
+pub mod migrate;
 pub mod set_config;
 pub mod set_preset;
 pub mod update;
