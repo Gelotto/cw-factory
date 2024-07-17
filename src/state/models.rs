@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint64};
+use serde_json::{Map as SerdeMap, Value};
 
 use super::storage::ContractId;
 
@@ -17,4 +18,11 @@ pub struct SubMsgContext {
     pub created_by: Addr,
     pub name: Option<String>,
     pub admin: Addr,
+}
+
+#[cw_serde]
+pub struct Preset {
+    pub values: SerdeMap<String, Value>,
+    pub overridable: bool,
+    pub n_uses: u32,
 }

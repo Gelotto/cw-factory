@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Int128, Int64, Timestamp, Uint128, Uint64};
+use serde_json::{Map as SerdeMap, Value};
 
 use crate::state::{models::Config, storage::ContractId};
 
@@ -11,8 +12,15 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     SetConfig(Config),
+    Presets(PresetsExecuteMsg),
     Create(CreateMsg),
     Update(UpdateMsg),
+}
+
+#[cw_serde]
+pub enum PresetsExecuteMsg {
+    Set(SetPresetMsg),
+    Remove { name: String },
 }
 
 #[cw_serde]
@@ -32,10 +40,17 @@ pub enum ContractQueryMsg {
 }
 
 #[cw_serde]
+pub enum PresetsQueryMsg {
+    Get { name: String },
+    Paginate { cursor: Option<String> },
+}
+
+#[cw_serde]
 pub enum QueryMsg {
     Config {},
     Contracts(ContractSetQueryMsg),
     Contract(ContractQueryMsg),
+    Presets(PresetsQueryMsg),
 }
 
 #[cw_serde]
@@ -128,6 +143,20 @@ pub struct ContractMetadataResponse {
 pub struct ConfigResponse(pub Config);
 
 #[cw_serde]
+pub struct PresetResponse {
+    pub name: String,
+    pub values: SerdeMap<String, Value>,
+    pub overridable: bool,
+    pub n_uses: u32,
+}
+
+#[cw_serde]
+pub struct PresetPaginationResponse {
+    pub cursor: Option<String>,
+    pub presets: Vec<PresetResponse>,
+}
+
+#[cw_serde]
 pub struct ContractsByIndexResponse {
     pub addresses: Vec<Addr>,
     pub cursor: Option<(Vec<u8>, ContractId)>,
@@ -149,12 +178,20 @@ pub struct ContractsRelatedToResponse {
 
 #[cw_serde]
 pub struct CreateMsg {
+    pub preset: Option<String>,
     pub code_id: Option<Uint64>,
-    pub instantiate_msg: Binary,
+    pub instantiate_msg: SerdeMap<String, Value>,
     pub name: Option<String>,
     pub label: String,
     pub admin: Option<Addr>,
     pub tags: Option<Vec<String>>,
+}
+
+#[cw_serde]
+pub struct SetPresetMsg {
+    pub name: String,
+    pub values: SerdeMap<String, Value>,
+    pub overridable: bool,
 }
 
 #[cw_serde]

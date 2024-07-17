@@ -1,8 +1,12 @@
 use crate::error::ContractError;
 use crate::execute::create::{exec_create, exec_create_reply_handler};
+use crate::execute::set_preset::{exec_remove_preset, exec_set_preset};
 use crate::execute::update::exec_update;
 use crate::execute::{set_config::exec_set_config, Context};
-use crate::msg::{ContractQueryMsg, ContractSetQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{
+    ContractQueryMsg, ContractSetQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, PresetsExecuteMsg, PresetsQueryMsg,
+    QueryMsg,
+};
 use crate::query::contract::has_relations::query_contract_has_relations;
 use crate::query::contract::has_tags::query_contract_has_tags;
 use crate::query::contract::metadata::query_contract_metadata;
@@ -11,6 +15,7 @@ use crate::query::contract::tags::query_contract_tags;
 use crate::query::contracts::in_range::query_contracts_in_range;
 use crate::query::contracts::related_to::query_contracts_related_to;
 use crate::query::contracts::with_tag::query_contracts_with_tag;
+use crate::query::presets::{query_paginated_presets, query_preset};
 use crate::query::{config::query_config, ReadonlyContext};
 use crate::state;
 use cosmwasm_std::{entry_point, to_json_binary as to_binary, Reply};
@@ -43,6 +48,10 @@ pub fn execute(
         ExecuteMsg::SetConfig(config) => exec_set_config(ctx, config),
         ExecuteMsg::Create(msg) => exec_create(ctx, msg),
         ExecuteMsg::Update(msg) => exec_update(ctx, msg),
+        ExecuteMsg::Presets(msg) => match msg {
+            PresetsExecuteMsg::Set(msg) => exec_set_preset(ctx, msg),
+            PresetsExecuteMsg::Remove { name } => exec_remove_preset(ctx, name),
+        },
     }
 }
 
@@ -76,6 +85,10 @@ pub fn query(
             ContractSetQueryMsg::InRange(params) => to_binary(&query_contracts_in_range(ctx, params)?),
             ContractSetQueryMsg::WithTag(params) => to_binary(&query_contracts_with_tag(ctx, params)?),
             ContractSetQueryMsg::RelatedTo(params) => to_binary(&query_contracts_related_to(ctx, params)?),
+        },
+        QueryMsg::Presets(msg) => match msg {
+            PresetsQueryMsg::Get { name } => to_binary(&query_preset(ctx, name)?),
+            PresetsQueryMsg::Paginate { cursor } => to_binary(&query_paginated_presets(ctx, cursor)?),
         },
     }?;
     Ok(result)

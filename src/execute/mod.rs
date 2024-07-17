@@ -1,6 +1,7 @@
 pub mod create;
 pub mod hide;
 pub mod set_config;
+pub mod set_preset;
 pub mod update;
 
 use cosmwasm_std::{DepsMut, Env, MessageInfo};

@@ -10,6 +10,7 @@ use crate::{
             IX_CREATED_BY, IX_UPDATED_AT, REPLY_ID_COUNTER, SUBMSG_CONTEXTS,
         },
     },
+    util::apply_preset,
 };
 use cosmwasm_std::{attr, Addr, DepsMut, Env, Event, Reply, Response, StdError, SubMsg, WasmMsg};
 use cw_utils::{parse_reply_instantiate_data, MsgInstantiateContractResponse};
@@ -75,7 +76,7 @@ pub fn exec_create(
         .add_attributes(vec![attr("action", "create")])
         .add_submessage(SubMsg::reply_on_success(
             WasmMsg::Instantiate {
-                msg: msg.instantiate_msg,
+                msg: apply_preset(deps.storage, msg.instantiate_msg, msg.preset)?,
                 funds: info.funds.to_owned(),
                 label: msg.label,
                 admin: Some(admin.into()),

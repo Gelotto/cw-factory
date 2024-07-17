@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Timestamp, Uint64};
 use cw_storage_plus::{Item, Map};
 
-use super::models::SubMsgContext;
+use super::models::{Preset, SubMsgContext};
 
 pub type ContractId = u32;
 pub type IndexMap<'a> = Map<'a, (&'a [u8], ContractId), u8>;
@@ -32,7 +32,7 @@ pub const CONTRACT_ADDR_2_ID: Map<&Addr, ContractId> = Map::new("contract_addr_2
 pub const CONTRACT_NAME_2_ID: Map<&String, ContractId> = Map::new("contract_name_2_id");
 pub const CONTRACT_ID_2_IS_HIDDEN: Map<ContractId, bool> = Map::new("contract_id_2_is_hidden");
 
-/// Lookup-table for determining which "indexes" are used by a given contract
+/// Lookup-table for determining which "indexes" are used by a given contracjt
 pub const CONTRACT_CUSTOM_IX_VALUES: Map<(ContractId, &String), Vec<u8>> = Map::new("custom_ix_values");
 
 // Index-like data structures for scanning contracts by various criteria
@@ -57,3 +57,5 @@ pub const CONTRACT_TAG_WEIGHTS: Map<(ContractId, &[u8]), u16> = Map::new("contra
 // Contract "relations" data
 pub const IX_REL_CONTRACT_ADDR: Map<(ContractId, &[u8], &[u8]), Option<String>> = Map::new("ix_rel_contract_addr");
 pub const IX_REL_ADDR: Map<(&[u8], &[u8], ContractId), u8> = Map::new("ix_rel_addr");
+
+pub const PRESETS: Map<&String, Preset> = Map::new("presets");
