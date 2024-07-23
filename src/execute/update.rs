@@ -132,11 +132,11 @@ pub fn exec_update(
 fn remove_relation(
     store: &mut dyn Storage,
     contract_id: ContractId,
-    rel_name_bytes: &[u8],
+    edge: &[u8],
     rel_addr: &[u8],
 ) -> Result<(), ContractError> {
-    IX_REL_ADDR.remove(store, (rel_addr, rel_name_bytes, contract_id));
-    IX_REL_CONTRACT_ADDR.remove(store, (contract_id, rel_name_bytes, rel_addr));
+    IX_REL_ADDR.remove(store, (rel_addr, edge, contract_id));
+    IX_REL_CONTRACT_ADDR.remove(store, (contract_id, edge, rel_addr));
     Ok(())
 }
 
@@ -145,13 +145,16 @@ fn set_relation(
     contract_id: ContractId,
     rel_name: &String,
     rel_addr: &Addr,
-    value: Option<String>,
+    value: Option<IndexValue>,
 ) -> Result<(), ContractError> {
     let rel_addr = rel_addr.as_bytes();
-    let rel_name_bytes = &IndexValue::String(rel_name.to_owned()).to_bytes();
-    remove_relation(store, contract_id, &rel_name_bytes, rel_addr)?;
-    IX_REL_ADDR.save(store, (rel_addr, rel_name_bytes, contract_id), &0)?;
-    IX_REL_CONTRACT_ADDR.save(store, (contract_id, rel_name_bytes, rel_addr), &value)?;
+    let mut edge = IndexValue::String(rel_name.to_owned()).to_bytes();
+    if let Some(value) = &value {
+        edge.extend(value.to_bytes());
+    }
+    remove_relation(store, contract_id, &edge, rel_addr)?;
+    IX_REL_ADDR.save(store, (rel_addr, &edge, contract_id), &0)?;
+    IX_REL_CONTRACT_ADDR.save(store, (contract_id, &edge, rel_addr), &value)?;
     Ok(())
 }
 

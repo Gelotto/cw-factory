@@ -53,7 +53,9 @@ fn has_relation(
     name_val: &NameValue,
     addr: &Addr,
 ) -> bool {
-    let tag_bytes_vec = IndexValue::String(name_val.name.to_owned()).to_bytes();
-    let tag_bytes = tag_bytes_vec.as_slice();
-    IX_REL_CONTRACT_ADDR.has(store, (contract_id, tag_bytes, addr.as_bytes()))
+    let mut edge = IndexValue::String(name_val.name.to_owned()).to_bytes();
+    if let Some(value) = &name_val.value {
+        edge.extend(value.to_bytes());
+    }
+    IX_REL_CONTRACT_ADDR.has(store, (contract_id, edge.as_slice(), addr.as_bytes()))
 }

@@ -1,12 +1,15 @@
 use crate::error::ContractError;
 use crate::execute::create::{exec_create, handle_creation_reply};
-use crate::execute::migrate::handle_migration_reply;
+use crate::execute::migrate::{
+    exec_begin_migration, exec_cancel_migration, exec_migrate_one, exec_retry_migration, exec_step_migration,
+    handle_migration_reply,
+};
 use crate::execute::set_preset::{exec_remove_preset, exec_set_preset};
 use crate::execute::update::exec_update;
 use crate::execute::{set_config::exec_set_config, Context};
 use crate::msg::{
-    ContractQueryMsg, ContractSetQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, PresetsExecuteMsg, PresetsQueryMsg,
-    QueryMsg,
+    ContractQueryMsg, ContractSetQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, MigrationSessionMsg,
+    MigrationsExecuteMsg, PresetsExecuteMsg, PresetsQueryMsg, QueryMsg,
 };
 use crate::query::contract::has_tags::query_contract_has_tags;
 use crate::query::contract::is_related_to::query_contract_is_related_to;
@@ -20,6 +23,7 @@ use crate::query::presets::{query_paginated_presets, query_preset};
 use crate::query::{config::query_config, ReadonlyContext};
 use crate::state;
 use crate::state::storage::MIGRATION_REPLY_ID_2_STATE;
+use crate::util::ensure_is_manager;
 use cosmwasm_std::{entry_point, to_json_binary as to_binary, Reply};
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
@@ -47,12 +51,27 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let ctx = Context { deps, env, info };
     match msg {
-        ExecuteMsg::SetConfig(config) => exec_set_config(ctx, config),
+        ExecuteMsg::Configure(config) => exec_set_config(ctx, config),
         ExecuteMsg::Create(msg) => exec_create(ctx, msg),
         ExecuteMsg::Update(msg) => exec_update(ctx, msg),
-        ExecuteMsg::Presets(msg) => match msg {
-            PresetsExecuteMsg::Set(msg) => exec_set_preset(ctx, msg),
-            PresetsExecuteMsg::Remove { name } => exec_remove_preset(ctx, name),
+        ExecuteMsg::Migrations(msg) => {
+            ensure_is_manager(ctx.deps.storage, &ctx.info.sender)?;
+            match msg {
+                MigrationsExecuteMsg::Migrate(params) => exec_migrate_one(ctx, params),
+                MigrationsExecuteMsg::Session(msg) => match msg {
+                    MigrationSessionMsg::Begin(params) => exec_begin_migration(ctx, params),
+                    MigrationSessionMsg::Step { name } => exec_step_migration(ctx, name),
+                    MigrationSessionMsg::Cancel { name } => exec_cancel_migration(ctx, name),
+                    MigrationSessionMsg::Retry { name, params } => exec_retry_migration(ctx, name, params),
+                },
+            }
+        },
+        ExecuteMsg::Presets(msg) => {
+            ensure_is_manager(ctx.deps.storage, &ctx.info.sender)?;
+            match msg {
+                PresetsExecuteMsg::Set(msg) => exec_set_preset(ctx, msg),
+                PresetsExecuteMsg::Remove { name } => exec_remove_preset(ctx, name),
+            }
         },
     }
 }

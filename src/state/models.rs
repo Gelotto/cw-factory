@@ -2,6 +2,8 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint64};
 use serde_json::{Map as SerdeMap, Value};
 
+use crate::msg::MigrationParams;
+
 use super::storage::ContractId;
 
 #[cw_serde]
@@ -31,16 +33,15 @@ pub struct Preset {
 pub enum MigrationStatus {
     Running,
     Completed,
-    CompletedWithErrors,
     Aborted,
 }
 
 #[cw_serde]
 pub struct Migration {
-    pub name: String,
+    pub params: MigrationParams,
     pub status: MigrationStatus,
     pub cursor: Option<ContractId>,
-    pub abort_on_error: bool,
+    pub retry_cursor: Option<ContractId>,
     pub n_success: u32,
     pub n_error: u32,
 }
@@ -49,4 +50,11 @@ pub struct Migration {
 pub struct MigrationError {
     pub contract: Addr,
     pub error: String,
+    pub reply_id: Uint64,
+}
+
+#[cw_serde]
+pub enum MigrationErrorPolicy {
+    Abort,
+    Ignore,
 }

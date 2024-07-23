@@ -2,7 +2,12 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Int128, Int64, Timestamp, Uint128, Uint64};
 use serde_json::{Map as SerdeMap, Value};
 
-use crate::state::{models::Config, storage::ContractId};
+use crate::state::{
+    models::{Config, MigrationErrorPolicy},
+    storage::ContractId,
+};
+
+pub const MAX_SIZEOF_STRING_KEY: usize = 128;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -10,11 +15,33 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+pub enum MigrationSessionMsg {
+    Begin(MigrationParams),
+    Step {
+        name: String,
+    },
+    Retry {
+        name: String,
+        params: Option<MigrationParams>,
+    },
+    Cancel {
+        name: String,
+    },
+}
+
+#[cw_serde]
+pub enum MigrationsExecuteMsg {
+    Migrate(SingletonMigrationParams),
+    Session(MigrationSessionMsg),
+}
+
+#[cw_serde]
 pub enum ExecuteMsg {
-    SetConfig(Config),
+    Configure(Config),
     Presets(PresetsExecuteMsg),
     Create(CreateMsg),
     Update(UpdateMsg),
+    Migrations(MigrationsExecuteMsg),
 }
 
 #[cw_serde]
@@ -86,10 +113,10 @@ pub struct ContractIsRelatedToResponse {
 
 #[cw_serde]
 pub struct ContractRelationsQueryParams {
-    pub address: Addr,
-    pub cursor: Option<(String, Addr)>,
-    pub start: Option<RangeQueryBound<String>>,
-    pub stop: Option<RangeQueryBound<String>>,
+    pub contract: Addr,
+    pub cursor: Option<(Vec<u8>, Addr)>,
+    pub start: Option<RangeQueryBound<NameValue>>,
+    pub stop: Option<RangeQueryBound<NameValue>>,
     pub limit: Option<u16>,
     pub desc: Option<bool>,
 }
@@ -97,14 +124,24 @@ pub struct ContractRelationsQueryParams {
 #[cw_serde]
 pub struct NameValue {
     pub name: String,
-    pub value: Option<String>,
+    pub value: Option<IndexValue>,
+}
+
+impl NameValue {
+    pub fn as_edge_bytes(&self) -> Vec<u8> {
+        let mut bytes = self.name.as_bytes().to_vec();
+        if let Some(value) = &self.value {
+            bytes.extend(value.to_bytes());
+        }
+        bytes
+    }
 }
 
 #[cw_serde]
 pub struct RelatedAddress {
     pub address: Addr,
     pub name: String,
-    pub value: Option<String>,
+    pub value: Option<IndexValue>,
 }
 
 #[cw_serde]
@@ -172,7 +209,7 @@ pub struct ContractsByTagResponse {
 #[cw_serde]
 pub struct ContractsRelatedToResponse {
     pub addresses: Vec<Addr>,
-    pub values: Vec<Option<String>>,
+    pub values: Vec<Option<IndexValue>>,
     pub cursor: Option<ContractId>,
 }
 
@@ -223,10 +260,15 @@ impl IndexValue {
         match self {
             Self::Bytes(bytes) => bytes.to_owned(),
             IndexValue::String(s) => {
-                let mut bytes = s.as_bytes().to_vec();
-                let n = 500 - bytes.len();
-                bytes.extend_from_slice(vec![0; n].as_slice());
-                bytes
+                let bytes_slice = s.as_bytes();
+                if bytes_slice.len() > MAX_SIZEOF_STRING_KEY {
+                    bytes_slice[..MAX_SIZEOF_STRING_KEY].to_vec()
+                } else {
+                    let mut bytes = bytes_slice.to_vec();
+                    let n = MAX_SIZEOF_STRING_KEY - bytes.len();
+                    bytes.extend_from_slice(vec![0; n].as_slice());
+                    bytes
+                }
             },
             IndexValue::Uint128(x) => x.to_le_bytes().to_vec(),
             IndexValue::Uint64(x) => x.to_le_bytes().to_vec(),
@@ -267,7 +309,7 @@ pub struct TagUpdate {
 pub struct RelationUpdate {
     pub op: UpdateOperation,
     pub name: String,
-    pub value: Option<String>,
+    pub value: Option<IndexValue>,
     pub address: Addr,
 }
 
@@ -357,20 +399,28 @@ pub struct ContractsByTagQueryParams {
 
 #[cw_serde]
 pub struct ContractsRelatedToParams {
-    pub cursor: Option<ContractId>,
+    pub cursor: Option<(ContractId, Vec<u8>)>,
     pub limit: Option<u16>,
     pub desc: Option<bool>,
-    pub name: String,
     pub address: Addr,
+    pub start: Option<RangeQueryBound<NameValue>>,
+    pub stop: Option<RangeQueryBound<NameValue>>,
 }
 
 #[cw_serde]
 pub struct MigrationParams {
     pub name: String,
-    pub limit: Option<u16>,
-    pub retry: Option<bool>,
-    pub abort_on_error: bool,
-    pub from_code_id: Option<Uint64>,
     pub to_code_id: Uint64,
-    pub msg: Binary,
+    pub error_policy: MigrationErrorPolicy,
+    pub from_code_id: Option<Uint64>,
+    pub batch_size: Option<u16>,
+    pub migrate_msg: Option<Binary>,
+}
+
+#[cw_serde]
+pub struct SingletonMigrationParams {
+    pub to_code_id: Uint64,
+    pub from_code_id: Option<Uint64>,
+    pub migrate_msg: Option<Binary>,
+    pub contract: Addr,
 }

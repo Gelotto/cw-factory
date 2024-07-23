@@ -17,7 +17,7 @@ pub fn query_contract_relations(
 ) -> Result<ContractRelationsResponse, ContractError> {
     let ReadonlyContext { deps, .. } = ctx;
     let ContractRelationsQueryParams {
-        address: contract,
+        contract,
         cursor,
         start,
         stop,
@@ -29,31 +29,38 @@ pub fn query_contract_relations(
 
     let (limit, desc) = prepare_limit_and_desc(limit, desc);
 
-    // Set the starting point for iterating over tags
+    // Set the starting point for iterating over related contracts
     let mut from_bytes_box: Box<Vec<u8>> = Box::new(vec![]);
-    let mut from_addr_box: Box<Addr> = Box::new(Addr::unchecked(""));
+    let mut from_edge_box: Box<Vec<u8>> = Box::new(vec![]);
 
     let from_bound = match cursor {
         // Continue iterating after cursor
-        Some((name, addr)) => {
-            *from_bytes_box = IndexValue::String(name).to_bytes();
-            *from_addr_box = addr;
-            let bytes = from_bytes_box.as_slice();
-            Some(Bound::Exclusive(((id, bytes, from_addr_box.as_bytes()), PhantomData)))
+        Some((edge, addr)) => {
+            *from_bytes_box = IndexValue::String(addr.to_string()).to_bytes();
+            *from_edge_box = edge;
+            Some(Bound::Exclusive((
+                (id, from_edge_box.as_slice(), from_bytes_box.as_slice()),
+                PhantomData,
+            )))
         },
         // Start iterating from the beginning or from the start given.
         None => {
             if let Some(start) = start {
+                *from_bytes_box = IndexValue::String("".to_owned()).to_bytes();
                 match start {
-                    RangeQueryBound::Exclusive(name) => {
-                        *from_bytes_box = IndexValue::String(name.to_owned()).to_bytes();
-                        let bytes = from_bytes_box.as_slice();
-                        Some(Bound::Exclusive(((id, bytes, from_addr_box.as_bytes()), PhantomData)))
+                    RangeQueryBound::Exclusive(name_value) => {
+                        *from_edge_box = name_value.as_edge_bytes();
+                        Some(Bound::Exclusive((
+                            (id, from_edge_box.as_slice(), from_bytes_box.as_slice()),
+                            PhantomData,
+                        )))
                     },
-                    RangeQueryBound::Inclusive(name) => {
-                        *from_bytes_box = IndexValue::String(name.to_owned()).to_bytes();
-                        let bytes = from_bytes_box.as_slice();
-                        Some(Bound::Exclusive(((id, bytes, from_addr_box.as_bytes()), PhantomData)))
+                    RangeQueryBound::Inclusive(name_value) => {
+                        *from_edge_box = name_value.as_edge_bytes();
+                        Some(Bound::Inclusive((
+                            (id, from_edge_box.as_slice(), from_bytes_box.as_slice()),
+                            PhantomData,
+                        )))
                     },
                 }
             } else {
@@ -64,27 +71,24 @@ pub fn query_contract_relations(
 
     // Set the bound where iteration should stop
     let mut to_bytes_box: Box<Vec<u8>> = Box::new(vec![]);
-    let mut to_addr_box: Box<Vec<u8>> = Box::new(vec![]);
+    let mut to_edge_box: Box<Vec<u8>> = Box::new(vec![]);
+
     let to_bound = if let Some(stop) = stop {
-        *to_addr_box = {
-            let mut liminal_addr_bytes = contract.as_bytes().to_owned();
-            if desc {
-                liminal_addr_bytes.fill(u8::MIN)
-            } else {
-                liminal_addr_bytes.fill(u8::MAX)
-            }
-            liminal_addr_bytes
-        };
+        *to_bytes_box = IndexValue::String("".to_owned()).to_bytes();
         match stop {
-            RangeQueryBound::Exclusive(name) => {
-                *to_bytes_box = IndexValue::String(name.to_owned()).to_bytes();
-                let bytes = to_bytes_box.as_slice();
-                Some(Bound::Exclusive(((id, bytes, to_addr_box.as_slice()), PhantomData)))
+            RangeQueryBound::Exclusive(name_value) => {
+                *to_edge_box = name_value.as_edge_bytes();
+                Some(Bound::Exclusive((
+                    (id, to_edge_box.as_slice(), to_bytes_box.as_slice()),
+                    PhantomData,
+                )))
             },
-            RangeQueryBound::Inclusive(name) => {
-                *to_bytes_box = IndexValue::String(name.to_owned()).to_bytes();
-                let bytes = to_bytes_box.as_slice();
-                Some(Bound::Inclusive(((id, bytes, to_addr_box.as_slice()), PhantomData)))
+            RangeQueryBound::Inclusive(name_value) => {
+                *to_edge_box = name_value.as_edge_bytes();
+                Some(Bound::Inclusive((
+                    (id, to_edge_box.as_slice(), to_bytes_box.as_slice()),
+                    PhantomData,
+                )))
             },
         }
     } else {

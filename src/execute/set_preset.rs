@@ -1,13 +1,9 @@
 use crate::{
     error::ContractError,
     msg::SetPresetMsg,
-    state::{
-        models::Preset,
-        storage::{MANAGED_BY, PRESETS},
-    },
-    util::ensure_is_manager,
+    state::{models::Preset, storage::PRESETS},
 };
-use cosmwasm_std::{attr, ensure_eq, Response};
+use cosmwasm_std::{attr, Response};
 
 use super::Context;
 
@@ -15,14 +11,12 @@ pub fn exec_set_preset(
     ctx: Context,
     msg: SetPresetMsg,
 ) -> Result<Response, ContractError> {
-    let Context { deps, info, .. } = ctx;
+    let Context { deps, .. } = ctx;
     let SetPresetMsg {
         name,
         values,
         overridable,
     } = msg;
-
-    ensure_is_manager(deps.storage, &info.sender)?;
 
     PRESETS.save(
         deps.storage,
@@ -41,9 +35,7 @@ pub fn exec_remove_preset(
     ctx: Context,
     name: String,
 ) -> Result<Response, ContractError> {
-    let Context { deps, info, .. } = ctx;
-
-    ensure_is_manager(deps.storage, &info.sender)?;
+    let Context { deps, .. } = ctx;
 
     PRESETS.remove(deps.storage, &name);
 
