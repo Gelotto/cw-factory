@@ -33,6 +33,7 @@ pub const CONTRACT_ID_2_NAME: Map<ContractId, String> = Map::new("contract_id_2_
 pub const CONTRACT_ADDR_2_ID: Map<&Addr, ContractId> = Map::new("contract_addr_2_id");
 pub const CONTRACT_NAME_2_ID: Map<&String, ContractId> = Map::new("contract_name_2_id");
 pub const CONTRACT_ID_2_IS_HIDDEN: Map<ContractId, bool> = Map::new("contract_id_2_is_hidden");
+pub const CONTRACT_ID_2_PARITION: Map<ContractId, u32> = Map::new("contract_id_2_partition");
 
 /// Lookup-table for determining which "indexes" are used by a given contracjt
 pub const CONTRACT_CUSTOM_IX_VALUES: Map<(ContractId, &String), Vec<u8>> = Map::new("custom_ix_values");

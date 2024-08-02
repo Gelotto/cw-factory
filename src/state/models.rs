@@ -32,7 +32,7 @@ pub struct Preset {
 #[cw_serde]
 pub enum MigrationStatus {
     Running,
-    Completed,
+    Complete,
     Aborted,
 }
 
@@ -54,7 +54,7 @@ pub struct MigrationError {
 }
 
 #[cw_serde]
-pub enum MigrationErrorPolicy {
+pub enum MigrationErrorStrategy {
     Abort,
-    Ignore,
+    Retry,
 }

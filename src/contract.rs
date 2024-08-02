@@ -9,7 +9,7 @@ use crate::execute::update::exec_update;
 use crate::execute::{set_config::exec_set_config, Context};
 use crate::msg::{
     ContractQueryMsg, ContractSetQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, MigrationSessionMsg,
-    MigrationsExecuteMsg, PresetsExecuteMsg, PresetsQueryMsg, QueryMsg,
+    MigrationsExecuteMsg, MigrationsQueryMsg, PresetsExecuteMsg, PresetsQueryMsg, QueryMsg,
 };
 use crate::query::contract::has_tags::query_contract_has_tags;
 use crate::query::contract::is_related_to::query_contract_is_related_to;
@@ -19,6 +19,7 @@ use crate::query::contract::tags::query_contract_tags;
 use crate::query::contracts::in_range::query_contracts_in_range;
 use crate::query::contracts::related_to::query_contracts_related_to;
 use crate::query::contracts::with_tag::query_contracts_with_tag;
+use crate::query::migrations::query_migration_session;
 use crate::query::presets::{query_paginated_presets, query_preset};
 use crate::query::{config::query_config, ReadonlyContext};
 use crate::state;
@@ -98,6 +99,9 @@ pub fn query(
     let ctx = ReadonlyContext { deps, env };
     let result = match msg {
         QueryMsg::Config {} => to_binary(&query_config(ctx)?),
+        QueryMsg::Migrations(msg) => match msg {
+            MigrationsQueryMsg::Session(name) => to_binary(&query_migration_session(ctx, name)?),
+        },
         QueryMsg::Contract(msg) => match msg {
             ContractQueryMsg::Metadata { address } => to_binary(&query_contract_metadata(ctx, address)?),
             ContractQueryMsg::IsRelatedTo(params) => to_binary(&query_contract_is_related_to(ctx, params)?),

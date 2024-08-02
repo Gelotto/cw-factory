@@ -1,13 +1,13 @@
 use crate::{
     error::ContractError,
     math::{add_u32, add_u64},
-    msg::CreateMsg,
+    msg::{CreateMsg, IndexValue},
     state::{
         models::SubMsgContext,
         storage::{
             CONFIG_ALLOWED_CODE_IDS, CONFIG_DEFAULT_CODE_ID, CONTRACT_ADDR_2_ID, CONTRACT_COUNTER, CONTRACT_ID_2_ADDR,
-            CONTRACT_ID_2_NAME, CONTRACT_ID_COUNTER, CONTRACT_NAME_2_ID, IX_ADMIN, IX_CODE_ID, IX_CREATED_AT,
-            IX_CREATED_BY, IX_UPDATED_AT, REPLY_ID_COUNTER, SUBMSG_CONTEXTS,
+            CONTRACT_ID_2_NAME, CONTRACT_ID_COUNTER, CONTRACT_NAME_2_ID, ID_2_CODE_ID, IX_ADMIN, IX_CODE_ID,
+            IX_CREATED_AT, IX_CREATED_BY, IX_UPDATED_AT, REPLY_ID_COUNTER, SUBMSG_CONTEXTS,
         },
     },
     util::apply_preset,
@@ -124,16 +124,23 @@ pub fn handle_creation_reply(
     CONTRACT_ADDR_2_ID.save(deps.storage, &contract_address, &contract_id)?;
     CONTRACT_ID_2_ADDR.save(deps.storage, contract_id, &contract_address)?;
 
+    let code_id_bytes = IndexValue::Uint64(code_id).to_bytes();
+    let created_at_bytes = IndexValue::Uint64(t.into()).to_bytes();
+    let created_by_bytes = IndexValue::String(created_by.into()).to_bytes();
+    let admin_bytes = IndexValue::String(admin.clone().into()).to_bytes();
+
+    ID_2_CODE_ID.save(deps.storage, contract_id, &code_id_bytes)?;
+
     if let Some(contract_name) = &name {
         CONTRACT_NAME_2_ID.save(deps.storage, contract_name, &contract_id)?;
         CONTRACT_ID_2_NAME.save(deps.storage, contract_id, contract_name)?;
     }
 
-    IX_CODE_ID.save(deps.storage, (&code_id.to_le_bytes(), contract_id), &0)?;
-    IX_CREATED_AT.save(deps.storage, (&t.to_le_bytes(), contract_id), &0)?;
-    IX_CREATED_BY.save(deps.storage, (created_by.as_bytes(), contract_id), &0)?;
-    IX_UPDATED_AT.save(deps.storage, (created_by.as_bytes(), contract_id), &0)?;
-    IX_ADMIN.save(deps.storage, (admin.as_bytes(), contract_id), &0)?;
+    IX_CODE_ID.save(deps.storage, (&code_id_bytes, contract_id), &0)?;
+    IX_CREATED_BY.save(deps.storage, (&created_by_bytes, contract_id), &0)?;
+    IX_CREATED_AT.save(deps.storage, (&created_at_bytes, contract_id), &0)?;
+    IX_UPDATED_AT.save(deps.storage, (&created_at_bytes, contract_id), &0)?;
+    IX_ADMIN.save(deps.storage, (&admin_bytes, contract_id), &0)?;
 
     Ok(resp.add_event(Event::new("factory-create").add_attributes(vec![
         attr("contract_address", contract_address.to_string()),

@@ -9,6 +9,9 @@ pub enum ContractError {
     #[error("MigrationExists: a migration named '{name}' is already in progress")]
     MigrationExists { name: String },
 
+    #[error("MigrationComplete: migration '{name}' already completed")]
+    MigrationComplete { name: String },
+
     #[error("NotAuthorized: {reason:?}")]
     NotAuthorized { reason: String },
 

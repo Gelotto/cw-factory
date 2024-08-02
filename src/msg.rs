@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, Binary, Int128, Int64, Timestamp, Uint128, Uint64};
 use serde_json::{Map as SerdeMap, Value};
 
 use crate::state::{
-    models::{Config, MigrationErrorPolicy},
+    models::{Config, Migration, MigrationError, MigrationErrorStrategy, MigrationStatus},
     storage::ContractId,
 };
 
@@ -67,6 +67,11 @@ pub enum ContractQueryMsg {
 }
 
 #[cw_serde]
+pub enum MigrationsQueryMsg {
+    Session(String),
+}
+
+#[cw_serde]
 pub enum PresetsQueryMsg {
     Get { name: String },
     Paginate { cursor: Option<String> },
@@ -77,6 +82,7 @@ pub enum QueryMsg {
     Config {},
     Contracts(ContractSetQueryMsg),
     Contract(ContractQueryMsg),
+    Migrations(MigrationsQueryMsg),
     Presets(PresetsQueryMsg),
 }
 
@@ -174,6 +180,17 @@ pub struct ContractMetadataResponse {
     pub name: Option<String>,
     pub code_id: Uint64,
     pub admin: Addr,
+}
+
+#[cw_serde]
+pub struct MigrationSessionResponse {
+    pub errors: Vec<MigrationError>,
+    pub params: MigrationParams,
+    pub status: MigrationStatus,
+    pub cursor: Option<ContractId>,
+    pub retry_cursor: Option<ContractId>,
+    pub n_success: u32,
+    pub n_error: u32,
 }
 
 #[cw_serde]
@@ -410,11 +427,11 @@ pub struct ContractsRelatedToParams {
 #[cw_serde]
 pub struct MigrationParams {
     pub name: String,
-    pub to_code_id: Uint64,
-    pub error_policy: MigrationErrorPolicy,
-    pub from_code_id: Option<Uint64>,
     pub batch_size: Option<u16>,
+    pub error_strategy: MigrationErrorStrategy,
     pub migrate_msg: Option<Binary>,
+    pub from_code_id: Option<Uint64>,
+    pub to_code_id: Uint64,
 }
 
 #[cw_serde]
