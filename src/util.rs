@@ -63,3 +63,31 @@ pub fn ensure_is_manager(
     );
     Ok(())
 }
+
+pub fn unpad_vec(bytes: Vec<u8>) -> Vec<u8> {
+    let len = bytes.len();
+    let mut i = len - 1;
+    let mut bytes = bytes;
+    while i != 0 && bytes[i] == 0 {
+        bytes.pop();
+        i -= 1;
+    }
+    bytes
+}
+
+pub fn pad_vec(
+    vec: Vec<u8>,
+    target_length: usize,
+) -> Vec<u8> {
+    let n = target_length.saturating_sub(vec.len());
+    if n > 0 {
+        let mut padded_vec = vec;
+        padded_vec.reserve(n);
+        for _ in 0..n {
+            padded_vec.push(0)
+        }
+        padded_vec
+    } else {
+        vec
+    }
+}

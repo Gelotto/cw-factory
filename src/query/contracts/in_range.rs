@@ -5,7 +5,7 @@ use cw_storage_plus::{Bound, Map};
 
 use crate::{
     error::ContractError,
-    msg::{ContractsByIndexResponse, ContractsInRangeQueryParams, IndexRangeBound, IndexSelector},
+    msg::{ContractsByIndexResponse, ContractsInRangeQueryParams, IndexRangeBound, IndexSelector, IndexValue},
     query::ReadonlyContext,
     state::{
         build_index_storage_key,
@@ -73,7 +73,10 @@ fn scan_index(
 
     let from_bound = match &params.cursor {
         Some((bytes, id)) => {
-            *start_bytes = bytes.to_owned();
+            *start_bytes = match &params.index {
+                IndexSelector::Custom(_) | IndexSelector::Tag => IndexValue::pad(bytes.to_owned()),
+                _ => bytes.to_owned(),
+            };
             Some(Bound::Exclusive(((start_bytes.as_slice(), *id), PhantomData)))
         },
         None => {
@@ -125,7 +128,13 @@ fn scan_index(
 
     let contract_ids: Vec<ContractId> = keys.iter().map(|k| k.1).collect();
     let cursor = if keys.len() == limit {
-        keys.last().and_then(|(a, b)| Some((a.to_vec(), *b)))
+        keys.last().and_then(|(a, b)| {
+            let bytes = match &params.index {
+                IndexSelector::Custom(_) | IndexSelector::Tag => IndexValue::strip(a.to_vec()),
+                _ => a.to_vec(),
+            };
+            Some((bytes, *b))
+        })
     } else {
         None
     };

@@ -2,9 +2,12 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Int128, Int64, Timestamp, Uint128, Uint64};
 use serde_json::{Map as SerdeMap, Value};
 
-use crate::state::{
-    models::{Config, Migration, MigrationError, MigrationErrorStrategy, MigrationStatus},
-    storage::ContractId,
+use crate::{
+    state::{
+        models::{Config, MigrationError, MigrationErrorStrategy, MigrationStatus},
+        storage::ContractId,
+    },
+    util::{pad_vec, unpad_vec},
 };
 
 pub const MAX_SIZEOF_STRING_KEY: usize = 128;
@@ -273,10 +276,21 @@ pub struct IndexUpdate {
 }
 
 impl IndexValue {
+    pub fn pad(bytes: Vec<u8>) -> Vec<u8> {
+        pad_vec(bytes, MAX_SIZEOF_STRING_KEY)
+    }
+
+    pub fn strip(bytes: Vec<u8>) -> Vec<u8> {
+        unpad_vec(bytes)
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
+            // TODO: Pad bytes like with string
             Self::Bytes(bytes) => bytes.to_owned(),
-            IndexValue::String(s) => {
+            // TODO: Pad bytes like with string
+            Self::Binary(x) => x.to_vec(),
+            Self::String(s) => {
                 let bytes_slice = s.as_bytes();
                 if bytes_slice.len() > MAX_SIZEOF_STRING_KEY {
                     bytes_slice[..MAX_SIZEOF_STRING_KEY].to_vec()
@@ -287,18 +301,17 @@ impl IndexValue {
                     bytes
                 }
             },
-            IndexValue::Uint128(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Uint64(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Uint32(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Uint16(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Uint8(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Int128(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Int64(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Int32(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Int16(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Int8(x) => x.to_le_bytes().to_vec(),
-            IndexValue::Bool(x) => vec![if *x { 1u8 } else { 0u8 }],
-            IndexValue::Binary(x) => x.to_vec(),
+            Self::Uint128(x) => x.to_le_bytes().to_vec(),
+            Self::Uint64(x) => x.to_le_bytes().to_vec(),
+            Self::Uint32(x) => x.to_le_bytes().to_vec(),
+            Self::Uint16(x) => x.to_le_bytes().to_vec(),
+            Self::Uint8(x) => x.to_le_bytes().to_vec(),
+            Self::Int128(x) => x.to_le_bytes().to_vec(),
+            Self::Int64(x) => x.to_le_bytes().to_vec(),
+            Self::Int32(x) => x.to_le_bytes().to_vec(),
+            Self::Int16(x) => x.to_le_bytes().to_vec(),
+            Self::Int8(x) => x.to_le_bytes().to_vec(),
+            Self::Bool(x) => vec![if *x { 1u8 } else { 0u8 }],
         }
     }
 }
