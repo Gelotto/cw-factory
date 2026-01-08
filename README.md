@@ -47,13 +47,13 @@ CosmWasm Factory is a **database-on-blockchain** primitive that transforms contr
          ↓
 ┌─────────────────────────────────────────┐
 │         CosmWasm Factory                │
-│  ┌────────────┐  ┌─────────────────┐   │
-│  │ Contracts  │  │    Indexes      │   │
-│  │  Registry  │←→│  • Built-in     │   │
-│  └────────────┘  │  • Custom       │   │
-│  ┌────────────┐  │  • Tags         │   │
-│  │  Relations │  │  • Timestamps   │   │
-│  │   Graph    │  └─────────────────┘   │
+│  ┌────────────┐  ┌─────────────────┐    │
+│  │ Contracts  │  │    Indexes      │    │
+│  │  Registry  │←→│  • Built-in     │    │
+│  └────────────┘  │  • Custom       │    │
+│  ┌────────────┐  │  • Tags         │    │
+│  │  Relations │  │  • Timestamps   │    │
+│  │   Graph    │  └─────────────────┘    │
 │  └────────────┘                         │
 └─────────────────────────────────────────┘
          │ instantiate + index
