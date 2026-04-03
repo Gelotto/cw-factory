@@ -294,7 +294,7 @@ fn set_tag(
     remove_tag(store, contract_id, tag_bytes,)?;
 
     // Store tag in all three indices
-    CONTRACT_TAG_WEIGHTS.save(store, (contract_id, tag_bytes,), &0,)?;
+    CONTRACT_TAG_WEIGHTS.save(store, (contract_id, tag_bytes,), &weight,)?;
 
     IX_WEIGHTED_TAG.save(store, (tag_bytes, weight, contract_id,), &0,)?;
 
